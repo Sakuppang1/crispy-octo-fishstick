@@ -1,0 +1,51 @@
+/* 全局风格：贴近视频中的浅米色纸张质感 + 柔和阴影 */
+:root {
+  --bg: #f4f1e6;
+  --panel: rgba(255, 255, 255, 0.6);
+  --panel-solid: #ffffff;
+  --text: #3a3a3a;
+  --muted: #7b7b7b;
+  --ink: #1d3953;
+  --accent: #d6a06b;
+  --accent-2: #1f4b6e;
+  --stroke: rgba(31, 75, 110, 0.25);
+  --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 10px 24px rgba(0, 0, 0, 0.08);
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --ring: 0 0 0 2px rgba(214, 160, 107, 0.35);
+
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden; /* 视频是整屏交互 */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

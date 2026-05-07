@@ -1,0 +1,90 @@
+.shell {
+  position: relative;
+  height: 100%;
+  background:
+    radial-gradient(760px 560px at 16% 26%, rgba(255, 255, 255, 0.4), transparent 60%),
+    radial-gradient(820px 600px at 82% 30%, rgba(255, 255, 255, 0.35), transparent 62%),
+    var(--bg);
+  overflow: hidden;
+}
+
+.topbar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 16px;
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.homeBtn {
+  border: 1px solid rgba(31, 75, 110, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 850;
+  color: rgba(29, 57, 83, 0.82);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+}
+
+.homeBtn:hover {
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: rgba(29, 57, 83, 0.88);
+}
+
+.stepper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  align-items: center;
+  color: rgba(29, 57, 83, 0.45);
+  user-select: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.step:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.stepActive {
+  background: rgba(255, 255, 255, 0.7);
+  color: rgba(29, 57, 83, 0.88);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
+}
+
+.divider {
+  width: 14px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(214, 160, 107, 0.5);
+}
+
+.content {
+  height: calc(100% - 64px);
+  position: relative;
+}

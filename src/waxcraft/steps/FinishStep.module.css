@@ -1,0 +1,264 @@
+.layout {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 16px;
+  padding: 12px 16px 18px;
+}
+
+.canvasArea {
+  position: relative;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(31, 75, 110, 0.08);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.fabric {
+  position: absolute;
+  inset: 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0b2f55, #041b34);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.stitch {
+  position: absolute;
+  inset: 20px;
+  border-radius: 16px;
+  border: 2px dashed rgba(214, 160, 107, 0.55);
+  pointer-events: none;
+}
+
+.pattern {
+  position: absolute;
+  inset: 14px;
+  pointer-events: none;
+}
+
+.ice {
+  position: absolute;
+  inset: 14px;
+  opacity: var(--ice, 0.55);
+  background:
+    linear-gradient(115deg, transparent 0 45%, rgba(255, 255, 255, 0.08) 45% 47%, transparent 47% 100%),
+    linear-gradient(25deg, transparent 0 55%, rgba(255, 255, 255, 0.06) 55% 57%, transparent 57% 100%),
+    linear-gradient(165deg, transparent 0 40%, rgba(255, 255, 255, 0.05) 40% 42%, transparent 42% 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 18px;
+  border: 1px solid rgba(31, 75, 110, 0.08);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.06);
+  padding: 14px;
+}
+
+.optTitle {
+  font-weight: 900;
+  color: rgba(29, 57, 83, 0.78);
+  margin-bottom: 10px;
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 75, 110, 0.1);
+  background: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+}
+
+.radioItem + .radioItem {
+  margin-top: 10px;
+}
+
+.radioDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(214, 160, 107, 0.55);
+  display: grid;
+  place-items: center;
+}
+.radioDotInner {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(214, 160, 107, 0.9);
+}
+
+.radioText {
+  flex: 1;
+}
+
+.radioName {
+  font-weight: 900;
+}
+
+.radioDesc {
+  font-size: 12px;
+  color: rgba(58, 58, 58, 0.6);
+  margin-top: 2px;
+}
+
+.miniIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  display: grid;
+  place-items: center;
+  color: rgba(29, 57, 83, 0.55);
+  font-weight: 900;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  color: rgba(58, 58, 58, 0.7);
+  font-size: 13px;
+}
+
+.switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(29, 57, 83, 0.18);
+  position: relative;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.switchOn {
+  background: rgba(214, 160, 107, 0.55);
+}
+
+.knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
+  transition: transform 160ms ease;
+}
+
+.knobOn {
+  transform: translateX(20px);
+}
+
+.bottomBar {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  height: 60px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(31, 75, 110, 0.08);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  gap: 14px;
+}
+
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: rgba(58, 58, 58, 0.7);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.stats b {
+  color: rgba(29, 57, 83, 0.85);
+  margin-left: 6px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn {
+  border: 1px solid rgba(31, 75, 110, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 900;
+  color: rgba(29, 57, 83, 0.82);
+}
+
+.btnPrimary {
+  background: rgba(31, 75, 110, 0.9);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.btnAccent {
+  background: rgba(214, 160, 107, 0.85);
+  color: rgba(35, 28, 18, 0.92);
+}
+
+.modalMask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: grid;
+  place-items: center;
+}
+
+.modal {
+  width: 280px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.2);
+  padding: 18px 18px 16px;
+  text-align: center;
+}
+
+.ok {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: rgba(214, 160, 107, 0.18);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 10px;
+  color: rgba(214, 160, 107, 0.95);
+  font-weight: 1000;
+  font-size: 20px;
+}
+
+.modalTitle {
+  font-weight: 1000;
+  color: rgba(29, 57, 83, 0.85);
+  margin-bottom: 6px;
+}
+
+.modalDesc {
+  font-size: 12px;
+  color: rgba(58, 58, 58, 0.6);
+}
+
