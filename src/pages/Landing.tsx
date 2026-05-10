@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import styles from './Landing.module.css'
 
-/** 织物底图，置于 public/landing/fabric.png */
-const FABRIC_BG = '/landing/fabric.png'
+/** 织物底图，置于 public/landing/fabric.jpg */
+const FABRIC_BG = '/landing/fabric.jpg'
 
 type Ripple = { x: number; y: number; r: number; o: number }
 
