@@ -1,4 +1,4 @@
-import type { CraftState, RegionId, StampKind, StepId, ToolId } from './types'
+import type { CraftState, RegionId, StampKind, StepId, ToolId, TraceUnderlay } from './types'
 
 export type Action =
   | { type: 'setRegion'; regionId: RegionId }
@@ -16,6 +16,8 @@ export type Action =
   | { type: 'setAiEnhance'; value: boolean }
   | { type: 'setShowIceCrack'; value: boolean }
   | { type: 'setFinished'; value: boolean }
+  | { type: 'setTraceUnderlay'; value: TraceUnderlay | null }
+  | { type: 'updateTraceUnderlay'; patch: Partial<Omit<TraceUnderlay, 'dataUrl'>> }
 
 export function createInitialState(regionId: RegionId): CraftState {
   return {
@@ -34,6 +36,7 @@ export function createInitialState(regionId: RegionId): CraftState {
     finished: false,
     aiEnhance: false,
     showIceCrack: true,
+    traceUnderlay: null,
   }
 }
 
@@ -99,6 +102,34 @@ export function reducer(state: CraftState, action: Action): CraftState {
       return { ...state, showIceCrack: action.value }
     case 'setFinished':
       return { ...state, finished: action.value }
+    case 'setTraceUnderlay': {
+      if (action.value === null) return { ...state, traceUnderlay: null }
+      const v = action.value
+      return {
+        ...state,
+        traceUnderlay: {
+          ...v,
+          opacity: Math.min(0.95, Math.max(0.06, v.opacity)),
+          scale: Math.min(3, Math.max(0.2, v.scale)),
+          offsetX: Math.min(600, Math.max(-600, v.offsetX)),
+          offsetY: Math.min(600, Math.max(-600, v.offsetY)),
+        },
+      }
+    }
+    case 'updateTraceUnderlay': {
+      if (!state.traceUnderlay) return state
+      const merged = { ...state.traceUnderlay, ...action.patch }
+      return {
+        ...state,
+        traceUnderlay: {
+          ...merged,
+          opacity: Math.min(0.95, Math.max(0.06, merged.opacity)),
+          scale: Math.min(3, Math.max(0.2, merged.scale)),
+          offsetX: Math.min(600, Math.max(-600, merged.offsetX)),
+          offsetY: Math.min(600, Math.max(-600, merged.offsetY)),
+        },
+      }
+    }
     default:
       return state
   }

@@ -4,6 +4,7 @@ import type { CraftState, RegionId } from '../types'
 import type { Action } from '../state'
 import styles from './FinishStep.module.css'
 import { drawStamp } from '../patterns/stamps'
+import { logicalCanvasSize, mapStrokePoints, strokeSmoothLine } from '../drawStroke'
 
 function formatTime(s: number) {
   const mm = String(Math.floor(s / 60)).padStart(2, '0')
@@ -14,8 +15,7 @@ function formatTime(s: number) {
 function drawWhitePattern(canvas: HTMLCanvasElement, state: CraftState) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
-  const w = canvas.width
-  const h = canvas.height
+  const { lw: w, lh: h } = logicalCanvasSize(canvas)
   ctx.clearRect(0, 0, w, h)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -52,11 +52,14 @@ function drawWhitePattern(canvas: HTMLCanvasElement, state: CraftState) {
 
   for (const p of state.paths) {
     if (p.points.length < 2) continue
-    ctx.lineWidth = Math.max(6, p.width * 1.6)
-    ctx.beginPath()
-    ctx.moveTo(p.points[0].x * scale + ox, p.points[0].y * scale + oy)
-    for (let i = 1; i < p.points.length; i++) ctx.lineTo(p.points[i].x * scale + ox, p.points[i].y * scale + oy)
-    ctx.stroke()
+    const mapped = mapStrokePoints(p.points, scale, ox, oy)
+    strokeSmoothLine(ctx, mapped, {
+      lineWidth: Math.max(6, p.width * 1.6),
+      strokeStyle: 'rgba(255,255,255,0.92)',
+      soft: true,
+      glowStroke: 'rgba(255,255,255,0.14)',
+      glowShadow: 'rgba(255,255,255,0.38)',
+    })
   }
 }
 
@@ -84,8 +87,7 @@ export function FinishStep({ state, dispatch }: { state: CraftState; dispatch: D
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     drawWhitePattern(c, state)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.paths.length, state.stamps.length, state.aiEnhance])
+  }, [state.paths, state.stamps, state.aiEnhance])
 
   const iceOpacity = useMemo(() => (state.showIceCrack ? 0.55 : 0), [state.showIceCrack])
 
@@ -103,10 +105,14 @@ export function FinishStep({ state, dispatch }: { state: CraftState; dispatch: D
   return (
     <div className={styles.layout}>
       <div className={styles.canvasArea}>
-        <div className={styles.fabric} />
-        <div className={styles.stitch} />
-        <canvas className={styles.pattern} ref={patternRef} />
-        <div className={styles.ice} style={{ ['--ice' as never]: iceOpacity }} />
+        <div className={styles.patternStage}>
+          <div className={styles.patternStageSquare}>
+            <div className={styles.fabric} />
+            <div className={styles.stitch} />
+            <canvas className={styles.pattern} ref={patternRef} />
+            <div className={styles.ice} style={{ ['--ice' as never]: iceOpacity }} />
+          </div>
+        </div>
 
         <div className={styles.bottomBar}>
           <div className={styles.stats}>

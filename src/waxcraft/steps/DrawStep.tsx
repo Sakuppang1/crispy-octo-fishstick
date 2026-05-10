@@ -4,8 +4,23 @@ import type { CraftState, StampKind, ToolId } from '../types'
 import type { Action } from '../state'
 import styles from './DrawStep.module.css'
 import { drawStamp } from '../patterns/stamps'
+import { smoothStrokePoints, strokeSmoothLine } from '../drawStroke'
+import { trySnapPrimitives } from '../primitiveSnap'
 
 const PX_TO_CM = 0.08
+/** 蜡染刀光标图，置于 public/landing/wax-knife.png（最长边由 CSS 限制为 1cm） */
+const KNIFE_CURSOR_SRC = '/landing/wax-knife.png'
+/** 落笔后静止超过此时长（毫秒）则尝试拉直横线或规整为正圆 */
+const STILL_SNAP_MS = 520
+
+/** 画笔稳定度 0~100：越高越防抖（提交时平滑半径更大、采样更疏） */
+function stabilityParams(t: number) {
+  const x = Math.min(100, Math.max(0, t))
+  const commitRadius = Math.max(1, Math.round(1 + (x / 100) * 6))
+  const previewRadius = x < 16 ? 0 : Math.max(1, Math.min(4, Math.round(1 + ((x - 16) / 84) * 3)))
+  const mergeDist = 1.25 + (x / 100) * 3.5
+  return { commitRadius, previewRadius, mergeDist }
+}
 
 function regionMeta(regionId: CraftState['regionId']) {
   switch (regionId) {
@@ -64,6 +79,12 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
   const drawingRef = useRef(false)
   const erasingRef = useRef(false)
   const curPathRef = useRef<Array<{ x: number; y: number }>>([])
+  const stillTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const didSnapRef = useRef(false)
+  const redrawRef = useRef<() => void>(() => {})
+  const traceFileRef = useRef<HTMLInputElement | null>(null)
+  const stampGhostRef = useRef<HTMLCanvasElement | null>(null)
+  const [brushStability, setBrushStability] = useState(52)
   const [cursor, setCursor] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false })
   const [mode, setMode] = useState<'draw' | 'stamp' | 'erase'>('draw')
   const [stampKind, setStampKind] = useState<StampKind>('flower1')
@@ -103,43 +124,85 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
       drawStamp(ctx, s.kind, s.x, s.y, s.size, wax)
     }
 
-    // 画路径（蜡线）
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
+    // 画路径（蜡线：平滑 + 柔边）
     for (const p of state.paths) {
       if (p.points.length < 2) continue
-      ctx.strokeStyle = wax
-      ctx.lineWidth = p.width
-      ctx.beginPath()
-      ctx.moveTo(p.points[0].x, p.points[0].y)
-      for (let i = 1; i < p.points.length; i++) ctx.lineTo(p.points[i].x, p.points[i].y)
-      ctx.stroke()
+      strokeSmoothLine(ctx, p.points, { lineWidth: p.width, strokeStyle: wax, soft: true })
     }
 
-    // 正在绘制的临时路径
+    // 正在绘制的临时路径（实时轻平滑预览，强度随稳定度）
     const tmp = curPathRef.current
     if (tmp.length >= 2) {
-      ctx.strokeStyle = wax
-      ctx.lineWidth = toolWidth(state.tool)
-      ctx.beginPath()
-      ctx.moveTo(tmp[0].x, tmp[0].y)
-      for (let i = 1; i < tmp.length; i++) ctx.lineTo(tmp[i].x, tmp[i].y)
-      ctx.stroke()
+      const { previewRadius } = stabilityParams(brushStability)
+      const preview =
+        tmp.length >= 4 && previewRadius > 0 ? smoothStrokePoints(tmp, previewRadius) : tmp
+      strokeSmoothLine(ctx, preview, { lineWidth: toolWidth(state.tool), strokeStyle: wax, soft: true })
     }
+  }
+
+  redrawRef.current = redraw
+
+  const clearStillTimer = () => {
+    if (stillTimerRef.current != null) {
+      window.clearTimeout(stillTimerRef.current)
+      stillTimerRef.current = null
+    }
+  }
+
+  const scheduleStillSnap = () => {
+    if (didSnapRef.current) return
+    clearStillTimer()
+    stillTimerRef.current = window.setTimeout(() => {
+      stillTimerRef.current = null
+      if (!drawingRef.current) return
+      if (didSnapRef.current) return
+      const pts = curPathRef.current
+      const snapped = trySnapPrimitives(pts)
+      if (!snapped) return
+      curPathRef.current = snapped
+      didSnapRef.current = true
+      redrawRef.current()
+    }, STILL_SNAP_MS)
   }
 
   useEffect(() => {
     resize()
     const onResize = () => resize()
     window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      if (stillTimerRef.current != null) window.clearTimeout(stillTimerRef.current)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     redraw()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.paths, state.stamps, state.tool])
+  }, [state.paths, state.stamps, state.tool, brushStability])
+
+  useEffect(() => {
+    const c = stampGhostRef.current
+    if (!c || mode !== 'stamp' || !cursor.visible) return
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
+    const size = Math.max(40, stampSize)
+    c.width = Math.floor(size * dpr)
+    c.height = Math.floor(size * dpr)
+    c.style.width = `${size}px`
+    c.style.height = `${size}px`
+    const ctx = c.getContext('2d')
+    if (!ctx) return
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, size, size)
+    drawStamp(ctx, stampKind, size / 2, size / 2, size * 0.92, 'rgba(214, 160, 107, 0.34)')
+    ctx.save()
+    ctx.strokeStyle = 'rgba(214, 160, 107, 0.52)'
+    ctx.setLineDash([6, 5])
+    ctx.lineWidth = 1.5
+    const m = 2.5
+    ctx.strokeRect(m, m, size - m * 2, size - m * 2)
+    ctx.restore()
+  }, [mode, cursor.visible, stampKind, stampSize])
 
   const pointFromEvent = (e: PointerEvent | React.PointerEvent) => {
     const c = canvasRef.current
@@ -168,6 +231,8 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
       return
     }
 
+    clearStillTimer()
+    didSnapRef.current = false
     drawingRef.current = true
     curPathRef.current = [p]
     redraw()
@@ -185,13 +250,19 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
 
     if (!drawingRef.current) return
     const pts = curPathRef.current
-    pts.push(p)
-    // 限制点数避免过密
-    if (pts.length > 2) {
-      const a = pts[pts.length - 2]
-      if (dist(a, p) < 1.5) return
+    const { mergeDist } = stabilityParams(brushStability)
+    if (pts.length >= 1) {
+      const prev = pts[pts.length - 1]
+      if (dist(prev, p) < mergeDist) {
+        pts[pts.length - 1] = p
+        redraw()
+        scheduleStillSnap()
+        return
+      }
     }
+    pts.push(p)
     redraw()
+    scheduleStillSnap()
   }
 
   const commit = () => {
@@ -201,10 +272,12 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
       redraw()
       return
     }
+    const { commitRadius } = stabilityParams(brushStability)
+    const smoothed = smoothStrokePoints(pts, commitRadius)
     let pxLen = 0
-    for (let i = 1; i < pts.length; i++) pxLen += dist(pts[i - 1], pts[i])
+    for (let i = 1; i < smoothed.length; i++) pxLen += dist(smoothed[i - 1], smoothed[i])
     const lengthCm = pxLen * PX_TO_CM
-    dispatch({ type: 'addPath', points: pts, width: toolWidth(state.tool), lengthCm })
+    dispatch({ type: 'addPath', points: smoothed, width: toolWidth(state.tool), lengthCm })
     curPathRef.current = []
     redraw()
   }
@@ -214,12 +287,36 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
       erasingRef.current = false
       return
     }
+    clearStillTimer()
     drawingRef.current = false
     commit()
   }
 
   const setTool = (tool: ToolId) => dispatch({ type: 'setTool', tool })
   const canNext = state.paths.length > 0 || state.stamps.length > 0
+
+  const onTraceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f || !f.type.startsWith('image/')) return
+    if (f.size > 12 * 1024 * 1024) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? '')
+      if (!dataUrl.startsWith('data:')) return
+      dispatch({
+        type: 'setTraceUnderlay',
+        value: {
+          dataUrl,
+          offsetX: 0,
+          offsetY: 0,
+          scale: 1,
+          opacity: 0.42,
+        },
+      })
+    }
+    reader.readAsDataURL(f)
+  }
 
   const STAMPS: Array<{ kind: StampKind; title: string }> = [
     { kind: 'flower1', title: '花纹 1' },
@@ -268,6 +365,22 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
           <div className={styles.toolIcon}>∧</div>
           <div className={styles.toolLabel}>变刀</div>
         </button>
+
+        {mode === 'draw' ? (
+          <div className={styles.sizeWrap}>
+            <div className={styles.sizeLabel}>画笔稳定度 {brushStability}</div>
+            <input
+              className={styles.sizeSlider}
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={brushStability}
+              onChange={(e) => setBrushStability(Number(e.target.value))}
+            />
+            <div className={styles.stabilityHint}>低：更跟手 · 高：更顺滑防抖</div>
+          </div>
+        ) : null}
 
         <button
           className={[styles.toolBtn, mode === 'erase' ? styles.toolBtnActive : ''].join(' ')}
@@ -334,8 +447,35 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
       </div>
 
       <div className={styles.canvasWrap} ref={wrapRef}>
+        {state.traceUnderlay ? (
+          <div className={styles.traceLayer} aria-hidden>
+            <img
+              src={state.traceUnderlay.dataUrl}
+              alt=""
+              className={styles.traceImg}
+              draggable={false}
+              style={{
+                opacity: state.traceUnderlay.opacity,
+                transform: `translate(calc(-50% + ${state.traceUnderlay.offsetX}px), calc(-50% + ${state.traceUnderlay.offsetY}px)) scale(${state.traceUnderlay.scale})`,
+              }}
+            />
+          </div>
+        ) : null}
         <div className={styles.grid} />
-        <div className={[styles.cursor, cursor.visible ? styles.cursorVisible : ''].join(' ')} style={{ left: cursor.x, top: cursor.y }} />
+        {mode === 'stamp' && cursor.visible ? (
+          <canvas ref={stampGhostRef} className={styles.stampGhost} style={{ left: cursor.x, top: cursor.y }} aria-hidden />
+        ) : null}
+        <div
+          className={[
+            styles.cursor,
+            cursor.visible ? styles.cursorVisible : '',
+            mode === 'stamp' && cursor.visible ? styles.cursorHideInStamp : '',
+          ].join(' ')}
+          style={{ left: cursor.x, top: cursor.y }}
+          aria-hidden
+        >
+          <img src={KNIFE_CURSOR_SRC} alt="" className={styles.cursorKnife} draggable={false} />
+        </div>
         <div className={[styles.corner, styles.c1].join(' ')} />
         <div className={[styles.corner, styles.c2].join(' ')} />
         <div className={[styles.corner, styles.c3].join(' ')} />
@@ -346,6 +486,7 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
           onPointerLeave={() => setCursor((p) => ({ ...p, visible: false }))}
         />
         <button
@@ -362,6 +503,97 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
           <div className={styles.regionTitle}>{meta.title}</div>
           <div className={styles.regionTag}>{meta.tag}</div>
         </div>
+
+        <div className={styles.traceCard}>
+          <div className={styles.traceCardTitle}>描摹底图</div>
+          <p className={styles.traceHint}>仅在本步显示；起缸及之后环节不会显示底图。</p>
+          <input
+            ref={traceFileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className={styles.traceHiddenInput}
+            onChange={onTraceFileChange}
+          />
+          <button type="button" className={styles.traceFileBtn} onClick={() => traceFileRef.current?.click()}>
+            上传图片…
+          </button>
+          {state.traceUnderlay ? (
+            <>
+              <div className={styles.traceSliderBlock}>
+                <div className={styles.traceSliderLabel}>
+                  <span>透明度</span>
+                  <span>{Math.round(state.traceUnderlay.opacity * 100)}%</span>
+                </div>
+                <input
+                  className={styles.sizeSlider}
+                  type="range"
+                  min={0.06}
+                  max={0.95}
+                  step={0.01}
+                  value={state.traceUnderlay.opacity}
+                  onChange={(e) =>
+                    dispatch({ type: 'updateTraceUnderlay', patch: { opacity: Number(e.target.value) } })
+                  }
+                />
+              </div>
+              <div className={styles.traceSliderBlock}>
+                <div className={styles.traceSliderLabel}>
+                  <span>缩放</span>
+                  <span>{state.traceUnderlay.scale.toFixed(2)}×</span>
+                </div>
+                <input
+                  className={styles.sizeSlider}
+                  type="range"
+                  min={0.2}
+                  max={3}
+                  step={0.02}
+                  value={state.traceUnderlay.scale}
+                  onChange={(e) =>
+                    dispatch({ type: 'updateTraceUnderlay', patch: { scale: Number(e.target.value) } })
+                  }
+                />
+              </div>
+              <div className={styles.traceSliderBlock}>
+                <div className={styles.traceSliderLabel}>
+                  <span>左右位置</span>
+                  <span>{Math.round(state.traceUnderlay.offsetX)}px</span>
+                </div>
+                <input
+                  className={styles.sizeSlider}
+                  type="range"
+                  min={-400}
+                  max={400}
+                  step={2}
+                  value={state.traceUnderlay.offsetX}
+                  onChange={(e) =>
+                    dispatch({ type: 'updateTraceUnderlay', patch: { offsetX: Number(e.target.value) } })
+                  }
+                />
+              </div>
+              <div className={styles.traceSliderBlock}>
+                <div className={styles.traceSliderLabel}>
+                  <span>上下位置</span>
+                  <span>{Math.round(state.traceUnderlay.offsetY)}px</span>
+                </div>
+                <input
+                  className={styles.sizeSlider}
+                  type="range"
+                  min={-400}
+                  max={400}
+                  step={2}
+                  value={state.traceUnderlay.offsetY}
+                  onChange={(e) =>
+                    dispatch({ type: 'updateTraceUnderlay', patch: { offsetY: Number(e.target.value) } })
+                  }
+                />
+              </div>
+              <button type="button" className={styles.traceClearBtn} onClick={() => dispatch({ type: 'setTraceUnderlay', value: null })}>
+                移除底图
+              </button>
+            </>
+          ) : null}
+        </div>
+
         <div className={styles.stats}>
           <div className={styles.statsTitle}>绘制状态</div>
           <div className={styles.statRow}>

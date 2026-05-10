@@ -1,118 +1,466 @@
 .page {
   position: relative;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  padding: 64px 24px;
-  background:
-    radial-gradient(600px 420px at 12% 20%, rgba(255, 255, 255, 0.55), transparent 60%),
-    radial-gradient(640px 520px at 86% 30%, rgba(255, 255, 255, 0.45), transparent 62%),
-    var(--bg);
+  background: transparent;
+  color: var(--ink);
 }
 
-.wrap {
-  width: min(1100px, 100%);
+/* 全屏织物底图（background-image 由 Landing.tsx 内联指定） */
+.fabricLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* 极淡高光，保证标题与按钮在复杂纹理上仍可读 */
+.fabricVeil {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(720px 480px at 14% 22%, rgba(255, 255, 255, 0.42), transparent 58%),
+    radial-gradient(680px 520px at 84% 28%, rgba(255, 255, 255, 0.32), transparent 60%);
+}
+
+/* 缓慢流动的水感高光 */
+.waterAmbient {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.08) 0%, transparent 36%, rgba(175, 198, 245, 0.09) 50%, rgba(120, 150, 220, 0.05) 62%, transparent 74%),
+    linear-gradient(-42deg, transparent 26%, rgba(255, 255, 255, 0.055) 46%, rgba(160, 185, 235, 0.04) 58%, transparent 70%);
+  background-size: 220% 220%;
+  animation: waterAmbientDrift 16s ease-in-out infinite alternate;
+}
+
+@keyframes waterAmbientDrift {
+  0% {
+    background-position: 0% 0%, 100% 100%;
+  }
+  100% {
+    background-position: 100% 45%, 0% 55%;
+  }
+}
+
+.waterRippleCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* 与底图相乘，靛色更易呈现「染进布纹」的蜡染感 */
+  mix-blend-mode: multiply;
+}
+
+.pageContent {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+}
+
+.pageContentIntro {
+  min-height: calc(100dvh - 96px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  justify-content: center;
 }
 
-.title {
-  margin: 0;
-  font-size: 72px;
-  line-height: 1;
-  letter-spacing: 2px;
-  color: var(--ink);
-  font-family: ui-serif, Georgia, "Times New Roman", serif;
-}
-
-.subtitle {
-  margin-top: 8px;
-  font-size: 18px;
-  color: rgba(29, 57, 83, 0.65);
-  letter-spacing: 0.8px;
-}
-
-.underline {
-  width: 84px;
-  height: 4px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(214, 160, 107, 0.9), transparent);
-  margin-top: 12px;
-}
-
-.cards {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 16px;
-}
-
-.card {
-  background: rgba(255, 255, 255, 0.55);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(31, 75, 110, 0.08);
-  padding: 18px;
-  text-align: left;
-  cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.08);
-  border-color: rgba(214, 160, 107, 0.55);
-}
-
-.cardActive {
-  border-color: rgba(214, 160, 107, 0.75);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.1);
-}
-
-.iconBox {
-  height: 124px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.7);
+/* 首屏：垂直居中（整屏高度，不依赖 body 滚动） */
+.pageIntroRoot {
+  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 48px 24px 64px;
 }
 
-.cardTitle {
-  margin: 14px 0 6px;
-  font-size: 18px;
-  font-weight: 650;
+.introInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+  width: min(920px, 100%);
 }
 
-.tag {
-  font-size: 13px;
-  font-weight: 650;
-  color: rgba(214, 160, 107, 0.95);
+.hero {
+  width: 100%;
+  text-align: center;
+}
+
+.titleBrand {
+  margin: -2cm 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.2rem 0.75rem;
+}
+
+.titleWord {
+  display: block;
+  height: clamp(44px, 11vw, 100px);
+  width: auto;
+  max-width: min(92vw, 480px);
+  object-fit: contain;
+  vertical-align: bottom;
+}
+
+.startBtn {
+  margin-top: 3cm;
+  border: 1px solid rgba(31, 45, 95, 0.12);
+  border-radius: 999px;
+  padding: 16px 40px;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  cursor: pointer;
+  /* 蜡坯留白：白底 + 蜡黄色字；悬停模拟浸染靛缸 */
+  color: #b8942e;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+  transition:
+    color 320ms ease,
+    background 320ms ease,
+    border-color 320ms ease,
+    box-shadow 320ms ease,
+    transform 160ms ease;
+}
+
+.startBtn:hover,
+.startBtn:focus-visible {
+  color: #fff;
+  background: linear-gradient(165deg, #3d5294, #243560);
+  border-color: rgba(18, 28, 72, 0.45);
+  box-shadow: 0 12px 32px rgba(28, 42, 98, 0.28);
+  transform: translateY(-1px);
+}
+
+.startBtn:focus-visible {
+  outline: 2px solid rgba(62, 92, 168, 0.55);
+  outline-offset: 3px;
+}
+
+.startBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 22px rgba(28, 42, 98, 0.22);
+}
+
+/*
+ * 第二屏：全局 body 为 overflow:hidden，必须把滚动锁在本层。
+ * 用视口高度约束盒子，内容超出时由本层 overflow-y 承接滚轮。
+ */
+.pageScroll {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 0 72px;
+  box-sizing: border-box;
+}
+
+.browseWrap {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 20px 24px 0;
+}
+
+.browseTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
   margin-bottom: 8px;
+  border-bottom: 1px solid rgba(31, 75, 110, 0.1);
 }
 
-.desc {
-  font-size: 13px;
-  color: rgba(58, 58, 58, 0.72);
-  line-height: 1.45;
-  min-height: 38px;
+.backLink {
+  border: none;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 650;
+  color: rgba(29, 57, 83, 0.78);
+  cursor: pointer;
+  border: 1px solid rgba(31, 75, 110, 0.1);
 }
 
-@media (max-width: 1040px) {
-  .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.backLink:hover {
+  border-color: rgba(214, 160, 107, 0.45);
 }
 
-@media (max-width: 620px) {
-  .title {
-    font-size: 44px;
-  }
-  .cards {
+.browseBrand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.35rem 0.6rem;
+  opacity: 0.88;
+}
+
+.browseBrandImg {
+  height: clamp(28px, 5vw, 44px);
+  width: auto;
+  max-width: min(40vw, 200px);
+  object-fit: contain;
+}
+
+.journeyList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.journeySection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px 36px;
+  align-items: start;
+  padding: 44px 0;
+  border-bottom: 1px solid rgba(31, 75, 110, 0.08);
+  min-height: min(72vh, 720px);
+}
+
+.journeySection:last-child {
+  border-bottom: none;
+}
+
+.journeyLeft {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  padding-right: 12px;
+}
+
+.journeyTitle {
+  margin: 0;
+  font-size: clamp(36px, 5vw, 52px);
+  line-height: 1.08;
+  font-weight: 750;
+  color: var(--ink);
+  font-family: ui-serif, Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.04em;
+}
+
+.journeyTag {
+  margin: 14px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(214, 160, 107, 0.95);
+  letter-spacing: 0.06em;
+}
+
+.journeyRight {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.journeyDesc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(58, 58, 58, 0.82);
+}
+
+.galleryWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.galleryThumbBtn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: 16px;
+  text-align: left;
+}
+
+.galleryThumbBtn:focus-visible {
+  outline: 2px solid rgba(214, 160, 107, 0.75);
+  outline-offset: 3px;
+}
+
+.lightboxMask {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: min(24px, 4vw);
+  box-sizing: border-box;
+  background: rgba(12, 18, 28, 0.88);
+  cursor: zoom-out;
+}
+
+.lightboxFigure {
+  position: relative;
+  margin: 0;
+  max-width: min(96vw, 1400px);
+  max-height: 92vh;
+  cursor: default;
+}
+
+.lightboxImg {
+  display: block;
+  max-width: min(96vw, 1400px);
+  max-height: 92vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.lightboxClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 999px;
+  padding: 0;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 160ms ease;
+}
+
+.lightboxClose:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.journeyImageFrame {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  aspect-ratio: 4 / 3;
+  background: rgba(31, 75, 110, 0.06);
+  max-height: min(42vh, 380px);
+  width: 100%;
+  position: relative;
+}
+
+.journeyImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.journeyImagePlaceholder {
+  border-radius: 16px;
+  aspect-ratio: 4 / 3;
+  max-height: min(42vh, 380px);
+  width: 100%;
+  background: linear-gradient(135deg, rgba(31, 75, 110, 0.08), rgba(214, 160, 107, 0.12));
+  border: 1px dashed rgba(31, 75, 110, 0.15);
+}
+
+.galleryDots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.galleryDot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(31, 75, 110, 0.22);
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.galleryDot:hover {
+  background: rgba(31, 75, 110, 0.38);
+  transform: scale(1.15);
+}
+
+.galleryDotActive {
+  background: rgba(214, 160, 107, 0.95);
+  transform: scale(1.2);
+}
+
+.enterBtn {
+  align-self: flex-start;
+  margin-top: 4px;
+  border: 1px solid rgba(31, 75, 110, 0.14);
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 750;
+  color: rgba(29, 57, 83, 0.88);
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.enterBtn:hover {
+  border-color: rgba(214, 160, 107, 0.55);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 720px) {
+  .journeySection {
     grid-template-columns: 1fr;
+    min-height: unset;
+    padding: 32px 0;
+  }
+
+  .journeyLeft {
+    position: static;
+    padding-right: 0;
+  }
+
+  .titleWord {
+    height: clamp(36px, 14vw, 72px);
+    max-width: min(96vw, 400px);
+  }
+
+  .browseTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .browseBrand {
+    justify-content: flex-start;
   }
 }
-

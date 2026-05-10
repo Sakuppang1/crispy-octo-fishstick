@@ -33,6 +33,17 @@ export type Stats = {
   seconds: number
 }
 
+/** 仅画蜡步骤显示：用户上传的描摹底图（后续环节不渲染） */
+export type TraceUnderlay = {
+  dataUrl: string
+  /** 相对画布中心的像素偏移 */
+  offsetX: number
+  offsetY: number
+  /** 相对「适配画布后的基准尺寸」的缩放 */
+  scale: number
+  opacity: number
+}
+
 export type CraftState = {
   regionId: RegionId
   step: StepId
@@ -53,5 +64,6 @@ export type CraftState = {
   finished: boolean
   aiEnhance: boolean
   showIceCrack: boolean
+  traceUnderlay: TraceUnderlay | null
 }
 

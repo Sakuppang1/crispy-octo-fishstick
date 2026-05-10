@@ -4,12 +4,12 @@ import type { CraftState } from '../types'
 import type { Action } from '../state'
 import styles from './DyeStep.module.css'
 import { drawStamp } from '../patterns/stamps'
+import { logicalCanvasSize, mapStrokePoints, strokeSmoothLine } from '../drawStroke'
 
 function drawPattern(canvas: HTMLCanvasElement, state: CraftState) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
-  const w = canvas.width
-  const h = canvas.height
+  const { lw: w, lh: h } = logicalCanvasSize(canvas)
   ctx.clearRect(0, 0, w, h)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -50,14 +50,12 @@ function drawPattern(canvas: HTMLCanvasElement, state: CraftState) {
 
   for (const p of state.paths) {
     if (p.points.length < 2) continue
-    ctx.strokeStyle = wax
-    ctx.lineWidth = Math.max(4, p.width * 1.3)
-    ctx.beginPath()
-    ctx.moveTo(p.points[0].x * scale + ox, p.points[0].y * scale + oy)
-    for (let i = 1; i < p.points.length; i++) {
-      ctx.lineTo(p.points[i].x * scale + ox, p.points[i].y * scale + oy)
-    }
-    ctx.stroke()
+    const mapped = mapStrokePoints(p.points, scale, ox, oy)
+    strokeSmoothLine(ctx, mapped, {
+      lineWidth: Math.max(4, p.width * 1.3),
+      strokeStyle: wax,
+      soft: true,
+    })
   }
 }
 
@@ -80,8 +78,7 @@ export function DyeStep({ state, dispatch }: { state: CraftState; dispatch: Disp
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     drawPattern(c, state)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.paths.length, state.stamps.length])
+  }, [state.paths, state.stamps])
 
   const bubbles = useMemo(() => {
     const n = phase === 'dyeing' ? 14 : 8
