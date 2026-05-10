@@ -284,6 +284,15 @@
   color: rgba(58, 58, 58, 0.82);
 }
 
+.journeyDescEn {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.62;
+  color: rgba(29, 57, 83, 0.58);
+  font-family: ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.01em;
+}
+
 .galleryWrap {
   display: flex;
   flex-direction: column;

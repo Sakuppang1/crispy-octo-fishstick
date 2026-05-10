@@ -108,7 +108,8 @@ type Card = {
   id: 'dansai' | 'huangping' | 'anshun' | 'zhijin'
   title: string
   tag: string
-  desc: string
+  descZh: string
+  descEn: string
   /** 将图片放在 public/landing/ 下，与 src 文件名一致；多张时每 3 秒自动切换 */
   gallery: GallerySlide[]
 }
@@ -116,9 +117,11 @@ type Card = {
 const CARDS: Card[] = [
   {
     id: 'dansai',
-    title: '丹寨',
-    tag: '经典蜡染',
-    desc: '丹寨苗岭以几何纹样见长，螺旋、铜鼓纹层层递进，蓝白分明、对称严谨，是黔东南蜡染最具代表性的范式之一。',
+    title: '丹寨蜡染',
+    tag: 'Danzhai Batik',
+    descZh: '丹寨蜡染以优雅灵动的蝴蝶妈妈纹与花鸟叙事著称，于细腻笔意间流淌着苗族对生命源起的浪漫想象。',
+    descEn:
+      'Danzhai batik is renowned for its graceful "Butterfly Mother" motifs and floral narratives, through whose delicate artistry flows the Miao people\'s romantic imagination of life\'s origins.',
     gallery: [
       { src: '/landing/dansai.jpg', alt: '丹寨蜡染：几何与花卉纹样 1' },
       { src: '/landing/dansai-2.jpg', alt: '丹寨蜡染：织物细节 2' },
@@ -126,9 +129,11 @@ const CARDS: Card[] = [
   },
   {
     id: 'huangping',
-    title: '黄平',
-    tag: '细腻花鸟',
-    desc: '黄平蜡染偏重花鸟鱼虫与植物藤蔓，线条婉转、层次丰富，在靛蓝底色上呈现细腻生动的自然意趣。',
+    title: '黄平蜡染',
+    tag: 'Huangping Batik',
+    descZh: '黄平蜡染承袭铜鼓遗韵，以规整对称的几何纹样与图腾符号，凝固了黔东南革家人对宇宙秩序的古老理解。',
+    descEn:
+      'Huangping batik inherits the legacy of bronze drums, solidifying the ancient cosmological understanding of the Gejia people in southeastern Guizhou through its orderly, symmetrical geometric patterns and totemic symbols.',
     gallery: [
       { src: '/landing/huangping-1.jpg', alt: '黄平蜡染：花鸟纹样 1' },
       { src: '/landing/huangping-2.jpg', alt: '黄平蜡染：细腻线条 2' },
@@ -136,16 +141,20 @@ const CARDS: Card[] = [
   },
   {
     id: 'anshun',
-    title: '安顺',
-    tag: '粗犷留白',
-    desc: '安顺风格常以大块留白与粗犷冰纹相映，构图疏朗、气势开张，在对比中留出深远的意境与呼吸感。',
+    title: '安顺蜡染',
+    tag: 'Anshun Batik',
+    descZh: '安顺蜡染常以植物染料点染，于靛蓝之外添红黄等色，绘就黔中斑斓的民族色谱。',
+    descEn:
+      'Anshun batik often applies plant-based dyes beyond indigo, adding reds and yellows to compose a vibrant ethnic palette in central Guizhou.',
     gallery: [{ src: '/landing/anshun.jpg', alt: '安顺蜡染：靛蓝留白与花卉' }],
   },
   {
     id: 'zhijin',
-    title: '织金',
-    tag: '彩色突破',
-    desc: '织金蜡染在蓝染之外融入多色套染与拼色手法，色彩更为斑斓，体现传统技艺与当代审美的融合探索。',
+    title: '织金蜡染',
+    tag: 'Zhijin Batik',
+    descZh: '织金蜡染以细若游丝的线条和繁密的几何纹样见长，于靛蓝底色上织就一部苗族迁徙史的密码史诗。',
+    descEn:
+      'Zhijin batik is distinguished by its silk-fine lines and dense geometric motifs, weaving an epic of Miao migration history encoded upon an indigo ground.',
     gallery: [
       { src: '/landing/zhijin-1.jpg', alt: '织金蜡染：彩色套染 1' },
       { src: '/landing/zhijin-2.jpg', alt: '织金蜡染：拼色细节 2' },
@@ -363,7 +372,10 @@ export function Landing() {
                     <p className={styles.journeyTag}>{c.tag}</p>
                   </div>
                   <div className={styles.journeyRight}>
-                    <p className={styles.journeyDesc}>{c.desc}</p>
+                    <p className={styles.journeyDesc}>{c.descZh}</p>
+                    <p className={styles.journeyDescEn} lang="en">
+                      {c.descEn}
+                    </p>
                     <JourneyGallery slides={c.gallery} />
                     <button type="button" className={styles.enterBtn} onClick={() => nav(`/craft/${c.id}`)}>
                       进入体验 →
