@@ -502,17 +502,6 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
         {mode === 'stamp' && cursor.visible ? (
           <canvas ref={stampGhostRef} className={styles.stampGhost} style={{ left: cursor.x, top: cursor.y }} aria-hidden />
         ) : null}
-        <div
-          className={[
-            styles.cursor,
-            cursor.visible ? styles.cursorVisible : '',
-            mode === 'stamp' && cursor.visible ? styles.cursorHideInStamp : '',
-          ].join(' ')}
-          style={{ left: cursor.x, top: cursor.y }}
-          aria-hidden
-        >
-          <img src={KNIFE_CURSOR_SRC} alt="" className={styles.cursorKnife} draggable={false} />
-        </div>
         <div className={[styles.corner, styles.c1].join(' ')} />
         <div className={[styles.corner, styles.c2].join(' ')} />
         <div className={[styles.corner, styles.c3].join(' ')} />
@@ -524,8 +513,25 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          onPointerLeave={() => setCursor((p) => ({ ...p, visible: false }))}
+          onPointerLeave={(e) => {
+            const c = canvasRef.current
+            // 按下后 setPointerCapture：指针移出画布几何范围仍会触发 leave；
+            // 若此时把光标隐藏，蜡刀会消失。仅在未捕获本指针时隐藏。
+            if (c?.hasPointerCapture(e.pointerId)) return
+            setCursor((p) => ({ ...p, visible: false }))
+          }}
         />
+        <div
+          className={[
+            styles.cursor,
+            cursor.visible ? styles.cursorVisible : '',
+            mode === 'stamp' && cursor.visible ? styles.cursorHideInStamp : '',
+          ].join(' ')}
+          style={{ left: cursor.x, top: cursor.y }}
+          aria-hidden
+        >
+          <img src={KNIFE_CURSOR_SRC} alt="" className={styles.cursorKnife} draggable={false} />
+        </div>
         <button
           className={styles.nextBtn}
           disabled={!canNext}
