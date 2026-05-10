@@ -14,7 +14,7 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
+  /* fixed 底图会迫使整页频繁重绘，易卡顿；本层已是 fixed，用 scroll 即可 */
 }
 
 /* 极淡高光，保证标题与按钮在复杂纹理上仍可读 */
@@ -34,6 +34,7 @@
   inset: 0;
   z-index: 2;
   pointer-events: none;
+  transform: translateZ(0);
   mix-blend-mode: soft-light;
   background:
     linear-gradient(118deg, rgba(255, 255, 255, 0.08) 0%, transparent 36%, rgba(175, 198, 245, 0.09) 50%, rgba(120, 150, 220, 0.05) 62%, transparent 74%),
@@ -58,6 +59,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  transform: translateZ(0);
   /* 与底图相乘，靛色更易呈现「染进布纹」的蜡染感 */
   mix-blend-mode: multiply;
 }
@@ -377,7 +379,6 @@
   display: flex;
   flex-direction: row;
   height: 100%;
-  will-change: transform;
   transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1);
 }
 

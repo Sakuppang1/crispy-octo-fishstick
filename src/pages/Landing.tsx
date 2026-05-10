@@ -16,12 +16,59 @@ function WaterRippleCanvas() {
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: true })
     if (!ctx) return
 
     let rafId = 0
+
+    const tick = () => {
+      const w = window.innerWidth
+      const h = window.innerHeight
+      ctx.clearRect(0, 0, w, h)
+      const list = ripplesRef.current
+      for (let i = list.length - 1; i >= 0; i--) {
+        const p = list[i]
+        p.r += 2.75
+        p.o *= 0.977
+        if (p.o < 0.018 || p.r > 320) {
+          list.splice(i, 1)
+          continue
+        }
+        const o = p.o
+        const rad = Math.max(p.r, 1)
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
+        g.addColorStop(0, `rgba(20, 36, 92, ${0.15 * o})`)
+        g.addColorStop(0.25, `rgba(32, 52, 124, ${0.24 * o})`)
+        g.addColorStop(0.55, `rgba(52, 78, 158, ${0.1 * o})`)
+        g.addColorStop(1, 'rgba(38, 58, 130, 0)')
+        ctx.fillStyle = g
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, rad, 0, Math.PI * 2)
+        ctx.fill()
+
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, rad, 0, Math.PI * 2)
+        ctx.strokeStyle = `rgba(62, 92, 168, ${0.12 * o})`
+        ctx.lineWidth = 1.1
+        ctx.stroke()
+      }
+      if (list.length > 0) {
+        rafId = requestAnimationFrame(tick)
+      } else {
+        rafId = 0
+      }
+    }
+
+    const kick = () => {
+      if (rafId !== 0) return
+      rafId = requestAnimationFrame(tick)
+    }
+
     const resize = () => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1)
+      cancelAnimationFrame(rafId)
+      rafId = 0
+      // 柔光涟漪用 1× 像素即可，避免高 DPR 下每帧大面积渐变导致卡顿
+      const dpr = 1
       const w = window.innerWidth
       const h = window.innerHeight
       canvas.width = Math.floor(w * dpr)
@@ -29,64 +76,21 @@ function WaterRippleCanvas() {
       canvas.style.width = `${w}px`
       canvas.style.height = `${h}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    }
-
-    const loop = () => {
-      const w = window.innerWidth
-      const h = window.innerHeight
-      ctx.clearRect(0, 0, w, h)
-      const list = ripplesRef.current
-      for (let i = list.length - 1; i >= 0; i--) {
-        const p = list[i]
-        // 略快外扩 + 较慢衰减，更像染料在水中晕开
-        p.r += 2.75
-        p.o *= 0.977
-        if (p.o < 0.018 || p.r > 340) {
-          list.splice(i, 1)
-          continue
-        }
-        const o = p.o
-        const rad = Math.max(p.r, 1)
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
-        // 靛蓝系（蜡染染液）：中心略深、边缘化开
-        g.addColorStop(0, `rgba(18, 32, 88, ${0.16 * o})`)
-        g.addColorStop(0.18, `rgba(28, 48, 118, ${0.26 * o})`)
-        g.addColorStop(0.42, `rgba(42, 68, 148, ${0.17 * o})`)
-        g.addColorStop(0.68, `rgba(58, 88, 168, ${0.08 * o})`)
-        g.addColorStop(0.9, `rgba(72, 102, 188, ${0.03 * o})`)
-        g.addColorStop(1, 'rgba(38, 58, 130, 0)')
-        ctx.fillStyle = g
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, rad, 0, Math.PI * 2)
-        ctx.fill()
-
-        // 外缘水波感：淡靛蓝细环
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, rad, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(62, 92, 168, ${0.14 * o})`
-        ctx.lineWidth = 1.2
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, rad * 0.9, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(100, 128, 210, ${0.065 * o})`
-        ctx.lineWidth = 0.85
-        ctx.stroke()
-      }
-      rafId = requestAnimationFrame(loop)
+      if (ripplesRef.current.length > 0) kick()
     }
 
     const onMove = (e: MouseEvent) => {
       const now = performance.now()
-      if (now - lastMoveRef.current < 28) return
+      if (now - lastMoveRef.current < 48) return
       lastMoveRef.current = now
       ripplesRef.current.push({ x: e.clientX, y: e.clientY, r: 2, o: 0.98 })
-      if (ripplesRef.current.length > 40) ripplesRef.current.shift()
+      if (ripplesRef.current.length > 22) ripplesRef.current.shift()
+      kick()
     }
 
     resize()
     window.addEventListener('resize', resize)
-    window.addEventListener('mousemove', onMove)
-    rafId = requestAnimationFrame(loop)
+    window.addEventListener('mousemove', onMove, { passive: true })
 
     return () => {
       window.removeEventListener('resize', resize)
