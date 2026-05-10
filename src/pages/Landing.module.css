@@ -373,6 +373,26 @@
   position: relative;
 }
 
+.journeyImageTrack {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  will-change: transform;
+  transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journeyImageTrack {
+    transition: none;
+  }
+}
+
+.journeyImageSlide {
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
 .journeyImage {
   display: block;
   width: 100%;

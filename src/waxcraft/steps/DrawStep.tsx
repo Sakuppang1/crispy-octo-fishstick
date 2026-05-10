@@ -8,6 +8,29 @@ import { smoothStrokePoints, strokeSmoothLine } from '../drawStroke'
 import { trySnapPrimitives } from '../primitiveSnap'
 
 const PX_TO_CM = 0.08
+/** 描摹底图仅允许 PNG / JPEG（部分系统 MIME 为空，需结合扩展名判断） */
+const TRACE_EXT = new Set(['.png', '.jpg', '.jpeg'])
+
+function isPngOrJpegFile(f: File): boolean {
+  const mime = (f.type || '').toLowerCase().trim()
+  const name = f.name || ''
+  const i = name.lastIndexOf('.')
+  const ext = i >= 0 ? name.slice(i).toLowerCase() : ''
+  const extOk = TRACE_EXT.has(ext)
+
+  const mimeOk =
+    mime === 'image/png' ||
+    mime === 'image/x-png' ||
+    mime === 'image/jpeg' ||
+    mime === 'image/jpg' ||
+    mime === 'image/pjpeg'
+
+  if (mimeOk) return true
+  // 部分系统 JPEG/PNG 的 type 为空或为 application/octet-stream，仅靠扩展名放行
+  if (extOk && (mime === '' || mime === 'application/octet-stream')) return true
+  return false
+}
+
 /** 蜡染刀光标图，置于 public/landing/wax-knife.png（最长边由 CSS 限制为 1cm） */
 const KNIFE_CURSOR_SRC = '/landing/wax-knife.png'
 /** 落笔后静止超过此时长（毫秒）则尝试拉直横线或规整为正圆 */
@@ -90,6 +113,7 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
   const [stampKind, setStampKind] = useState<StampKind>('flower1')
   const [stampSize, setStampSize] = useState(86)
   const [eraserSize, setEraserSize] = useState(28)
+  const [traceUploadError, setTraceUploadError] = useState<string | null>(null)
 
   const meta = useMemo(() => regionMeta(state.regionId), [state.regionId])
 
@@ -298,12 +322,24 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
   const onTraceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     e.target.value = ''
-    if (!f || !f.type.startsWith('image/')) return
-    if (f.size > 12 * 1024 * 1024) return
+    setTraceUploadError(null)
+    if (!f) return
+    if (!isPngOrJpegFile(f)) {
+      setTraceUploadError('请使用 PNG 或 JPG 格式（.png / .jpg / .jpeg）。')
+      return
+    }
+    if (f.size > 12 * 1024 * 1024) {
+      setTraceUploadError('图片需小于 12MB。')
+      return
+    }
     const reader = new FileReader()
     reader.onload = () => {
       const dataUrl = String(reader.result ?? '')
-      if (!dataUrl.startsWith('data:')) return
+      if (!dataUrl.startsWith('data:')) {
+        setTraceUploadError('无法读取该图片，请换一张 PNG 或 JPG 重试。')
+        return
+      }
+      setTraceUploadError(null)
       dispatch({
         type: 'setTraceUnderlay',
         value: {
@@ -315,6 +351,7 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
         },
       })
     }
+    reader.onerror = () => setTraceUploadError('读取文件失败，请重试。')
     reader.readAsDataURL(f)
   }
 
@@ -507,16 +544,25 @@ export function DrawStep({ state, dispatch }: { state: CraftState; dispatch: Dis
         <div className={styles.traceCard}>
           <div className={styles.traceCardTitle}>描摹底图</div>
           <p className={styles.traceHint}>仅在本步显示；起缸及之后环节不会显示底图。</p>
+          <p className={styles.traceFormatNote}>仅支持 PNG、JPG 格式（.png / .jpg / .jpeg）。</p>
           <input
             ref={traceFileRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept=".png,.jpg,.jpeg,image/png,image/jpeg"
             className={styles.traceHiddenInput}
             onChange={onTraceFileChange}
           />
-          <button type="button" className={styles.traceFileBtn} onClick={() => traceFileRef.current?.click()}>
+          <button
+            type="button"
+            className={styles.traceFileBtn}
+            onClick={() => {
+              setTraceUploadError(null)
+              traceFileRef.current?.click()
+            }}
+          >
             上传图片…
           </button>
+          {traceUploadError ? <p className={styles.traceUploadError}>{traceUploadError}</p> : null}
           {state.traceUnderlay ? (
             <>
               <div className={styles.traceSliderBlock}>

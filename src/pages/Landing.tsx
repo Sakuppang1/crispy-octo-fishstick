@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type TransitionEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import styles from './Landing.module.css'
@@ -152,16 +152,35 @@ const CARDS: Card[] = [
 const SLIDE_INTERVAL_MS = 3000
 
 function JourneyGallery({ slides }: { slides: GallerySlide[] }) {
-  const [index, setIndex] = useState(0)
   const [lightbox, setLightbox] = useState<GallerySlide | null>(null)
+  /** 轮播轨道索引；多于一张时在末尾多放一张首图，用于无缝从最后一张继续向右滑入「第一张」 */
+  const [trackIndex, setTrackIndex] = useState(0)
+  const [skipTrackTransition, setSkipTrackTransition] = useState(false)
+
+  const trackSlides = useMemo(() => {
+    if (slides.length <= 1) return slides
+    return [...slides, slides[0]]
+  }, [slides])
+
+  const trackLen = trackSlides.length
 
   useEffect(() => {
     if (slides.length <= 1 || lightbox) return
     const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length)
+      setTrackIndex((i) => {
+        if (slides.length <= 1) return 0
+        if (i === slides.length) return i
+        if (i < slides.length - 1) return i + 1
+        return slides.length
+      })
     }, SLIDE_INTERVAL_MS)
     return () => window.clearInterval(id)
   }, [slides.length, lightbox])
+
+  useEffect(() => {
+    setTrackIndex(0)
+    setSkipTrackTransition(false)
+  }, [slides])
 
   useEffect(() => {
     if (!lightbox) return
@@ -182,7 +201,19 @@ function JourneyGallery({ slides }: { slides: GallerySlide[] }) {
     )
   }
 
-  const current = slides[index]
+  const logicalIndex = trackIndex >= slides.length ? 0 : trackIndex
+  const current = slides[logicalIndex] ?? slides[0]
+
+  const onGalleryTrackTransitionEnd = (e: TransitionEvent<HTMLDivElement>) => {
+    if (e.propertyName !== 'transform') return
+    if (slides.length <= 1) return
+    if (trackIndex !== slides.length) return
+    setSkipTrackTransition(true)
+    setTrackIndex(0)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setSkipTrackTransition(false))
+    })
+  }
 
   const lightboxNode =
     lightbox &&
@@ -207,13 +238,31 @@ function JourneyGallery({ slides }: { slides: GallerySlide[] }) {
         aria-label={`查看大图：${current.alt}`}
       >
         <div className={styles.journeyImageFrame}>
-          <img
-            className={styles.journeyImage}
-            src={current.src}
-            alt={current.alt}
-            key={current.src}
-            loading={index === 0 ? 'eager' : 'lazy'}
-          />
+          <div
+            className={styles.journeyImageTrack}
+            style={{
+              width: `${trackLen * 100}%`,
+              transform: `translateX(-${(trackIndex * 100) / trackLen}%)`,
+              transition: skipTrackTransition ? 'none' : undefined,
+            }}
+            onTransitionEnd={onGalleryTrackTransitionEnd}
+          >
+            {trackSlides.map((s, i) => (
+              <div
+                key={i === trackSlides.length - 1 && slides.length > 1 ? `${s.src}__loop` : `${s.src}-${i}`}
+                className={styles.journeyImageSlide}
+                style={{ flex: `0 0 ${100 / trackLen}%` }}
+              >
+                <img
+                  className={styles.journeyImage}
+                  src={s.src}
+                  alt={s.alt}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  draggable={false}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </button>
       {slides.length > 1 ? (
@@ -223,10 +272,10 @@ function JourneyGallery({ slides }: { slides: GallerySlide[] }) {
               key={i}
               type="button"
               role="tab"
-              aria-selected={i === index}
+              aria-selected={i === logicalIndex}
               aria-label={`第 ${i + 1} 张，共 ${slides.length} 张`}
-              className={[styles.galleryDot, i === index ? styles.galleryDotActive : ''].join(' ')}
-              onClick={() => setIndex(i)}
+              className={[styles.galleryDot, i === logicalIndex ? styles.galleryDotActive : ''].join(' ')}
+              onClick={() => setTrackIndex(i)}
             />
           ))}
         </div>
@@ -259,6 +308,7 @@ export function Landing() {
                   width={440}
                   height={120}
                   decoding="async"
+                  fetchPriority="high"
                 />
                 <img
                   className={styles.titleWord}
@@ -267,6 +317,7 @@ export function Landing() {
                   width={520}
                   height={120}
                   decoding="async"
+                  fetchPriority="high"
                 />
               </h1>
             </header>
@@ -281,8 +332,20 @@ export function Landing() {
                 ← 返回
               </button>
               <div className={styles.browseBrand} aria-hidden>
-                <img className={styles.browseBrandImg} src="/landing/title-batik.png" alt="" decoding="async" />
-                <img className={styles.browseBrandImg} src="/landing/title-studio.png" alt="" decoding="async" />
+                <img
+                  className={styles.browseBrandImg}
+                  src="/landing/title-batik.png"
+                  alt=""
+                  decoding="async"
+                  fetchPriority="high"
+                />
+                <img
+                  className={styles.browseBrandImg}
+                  src="/landing/title-studio.png"
+                  alt=""
+                  decoding="async"
+                  fetchPriority="high"
+                />
               </div>
             </header>
 
