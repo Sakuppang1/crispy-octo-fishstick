@@ -10,13 +10,16 @@ import { DewaxStep } from '../waxcraft/steps/DewaxStep'
 import { FinishStep } from '../waxcraft/steps/FinishStep'
 import { agentLog } from '../debug/log'
 
-const STEPS: Array<{ id: StepId; label: string; icon: string }> = [
-  { id: 'select', label: '选择', icon: '⊙' },
-  { id: 'draw', label: '画蜡', icon: '✎' },
-  { id: 'vat', label: '起缸', icon: '▢' },
-  { id: 'dye', label: '染制', icon: '⟲' },
-  { id: 'dewax', label: '脱蜡', icon: '◔' },
-  { id: 'finish', label: '完成', icon: '✓' },
+const TITLE_BATIK = '/landing/title-batik.png'
+const TITLE_STUDIO = '/landing/title-studio.png'
+
+const STEPS: Array<{ id: StepId; label: string }> = [
+  { id: 'select', label: '选择' },
+  { id: 'draw', label: '画蜡' },
+  { id: 'vat', label: '起缸' },
+  { id: 'dye', label: '染制' },
+  { id: 'dewax', label: '脱蜡' },
+  { id: 'finish', label: '完成' },
 ]
 
 function isRegionId(x: string | undefined): x is RegionId {
@@ -66,8 +69,39 @@ export function WaxCraft() {
   return (
     <div className={styles.shell}>
       <div className={styles.topbar}>
-        <div className={styles.brand} onClick={() => nav('/')} role="button" tabIndex={0}>
-          <span style={{ color: 'var(--accent)' }}>✧</span> WaxCraft
+        <div
+          className={styles.brand}
+          onClick={() => nav('/')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              nav('/')
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="返回 Batik Studio 首页"
+        >
+          <span className={styles.brandMark}>
+            <img
+              className={styles.brandTitleImg}
+              src={TITLE_BATIK}
+              alt=""
+              width={220}
+              height={60}
+              decoding="async"
+              fetchPriority="low"
+            />
+            <img
+              className={styles.brandTitleImg}
+              src={TITLE_STUDIO}
+              alt=""
+              width={260}
+              height={60}
+              decoding="async"
+              fetchPriority="low"
+            />
+          </span>
         </div>
 
         <div className={styles.stepper}>
@@ -83,8 +117,7 @@ export function WaxCraft() {
                 }}
                 title={s.label}
               >
-                <span style={{ opacity: idx <= stepIndex ? 1 : 0.55 }}>{s.icon}</span>
-                <span>{s.label}</span>
+                <span style={{ opacity: idx <= stepIndex ? 1 : 0.55 }}>{s.label}</span>
               </div>
               {idx !== STEPS.length - 1 ? <div className={styles.divider} /> : null}
             </div>
@@ -107,9 +140,13 @@ export function WaxCraft() {
           {state.step === 'dewax' ? <DewaxStep state={state} dispatch={dispatch} /> : null}
           {state.step === 'finish' ? <FinishStep state={state} dispatch={dispatch} /> : null}
           {state.step === 'select' ? (
-            <div style={{ height: '100%', display: 'grid', placeItems: 'center', color: 'rgba(29,57,83,0.55)' }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>已选择地区：{regionId}</div>
+            <div className={styles.selectGate}>
+              <div className={styles.selectInner}>
+                <div className={styles.selectBrand} aria-hidden>
+                  <img className={styles.selectBrandImg} src={TITLE_BATIK} alt="" decoding="async" />
+                  <img className={styles.selectBrandImg} src={TITLE_STUDIO} alt="" decoding="async" />
+                </div>
+                <div className={styles.selectRegionTitle}>已选择地区：{regionId}</div>
                 <button
                   onClick={() => goStep('draw')}
                   style={{

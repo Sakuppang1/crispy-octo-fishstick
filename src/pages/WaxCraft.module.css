@@ -40,10 +40,68 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  flex-shrink: 0;
+}
+
+.brand:focus-visible {
+  outline: 2px solid rgba(214, 160, 107, 0.55);
+  outline-offset: 2px;
+}
+
+.brandMark {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.35rem 0.55rem;
+  line-height: 0;
+}
+
+.brandTitleImg {
+  display: block;
+  height: clamp(22px, 3.2vh, 34px);
+  width: auto;
+  max-width: min(32vw, 168px);
+  object-fit: contain;
+}
+
+.selectGate {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: rgba(29, 57, 83, 0.55);
+}
+
+.selectInner {
+  text-align: center;
+}
+
+.selectBrand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.35rem 0.6rem;
+  margin-bottom: 18px;
+  opacity: 0.9;
+}
+
+.selectBrandImg {
+  display: block;
+  height: clamp(32px, 6vw, 48px);
+  width: auto;
+  max-width: min(42vw, 240px);
+  object-fit: contain;
+}
+
+.selectRegionTitle {
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.3px;
-  color: rgba(29, 57, 83, 0.88);
+  margin-bottom: 10px;
 }
 
 .stepper {
