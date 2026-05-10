@@ -257,7 +257,7 @@
 
 .cursor {
   position: absolute;
-  z-index: 4;
+  z-index: 10;
   transform: translate(-50%, -50%);
   pointer-events: none;
   opacity: 0;
